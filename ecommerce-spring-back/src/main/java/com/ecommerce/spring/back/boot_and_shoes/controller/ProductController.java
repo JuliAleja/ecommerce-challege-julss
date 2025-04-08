@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("${request-mapping.controller.managament-product}")
@@ -96,4 +97,61 @@ public class ProductController {
         }
         return ResponseEntity.ok(productResponses);
     }
+    @PutMapping("update-product/{id}")
+    public ResponseEntity<ProductsCreateResponse> updateProduct(@PathVariable UUID id, @RequestBody ProductsCreateRQ productsCreateRQ) {
+        Products productFind= productService.findById(id);
+        Brands brands=brandService.finById(productsCreateRQ.getBrandId());
+        productFind.setBrands(brands);
+        productFind.setName(productsCreateRQ.getName());
+        productFind.setDescription(productsCreateRQ.getDescription());
+        productFind.setGender(productsCreateRQ.getGender());
+        productFind.setPrice(productsCreateRQ.getPrice());
+        productFind.setImageUrl(productsCreateRQ.getImageUrl());
+        Products updatedProduct=productService.create(productFind);
+
+        productVariantsService.deleteByProductId(updatedProduct.getId());
+
+        List<ProductsVariants> updatedVariants = new ArrayList<>();
+        for (ProductsVariantsCreateRQ variantRQ : productsCreateRQ.getVariantsList()) {
+            ProductsVariants variant = new ProductsVariants();
+            variant.setProduct(updatedProduct);
+            variant.setSize(variantRQ.getSize());
+            variant.setStock(variantRQ.getStock());
+            variant.setColor(variantRQ.getColor());
+            updatedVariants.add(variant);
+        }
+
+        List<ProductsVariants> variantsSaved = productVariantsService.creates(updatedVariants);
+
+        // 5. Armar respuesta
+        List<ProductsVariantsCreateResponse> variantsResponse = new ArrayList<>();
+        for (ProductsVariants var : variantsSaved) {
+            ProductsVariantsCreateResponse vr = new ProductsVariantsCreateResponse();
+            vr.setId(var.getId());
+            vr.setSize(var.getSize());
+            vr.setStock(var.getStock());
+            vr.setColor(var.getColor());
+            variantsResponse.add(vr);
+        }
+
+        ProductsCreateResponse response = new ProductsCreateResponse();
+        response.setId(updatedProduct.getId());
+        response.setName(updatedProduct.getName());
+        response.setDescription(updatedProduct.getDescription());
+        response.setBrands(updatedProduct.getBrands());
+        response.setPrice(updatedProduct.getPrice());
+        response.setImageUrl(updatedProduct.getImageUrl());
+        response.setVariantsList(variantsResponse);
+
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("delete-product/{id}")
+    public ResponseEntity<String> deleteProduct(@PathVariable UUID id) {
+        productVariantsService.deleteByProductId(id);
+        productService.delete(id);
+
+        return ResponseEntity.ok("Producto y variantes eliminados con éxito.");
+    }
 }
+

@@ -8,4 +8,5 @@ import java.util.UUID;
 public interface ProductVariantsService {
     List<ProductsVariants> creates (List<ProductsVariants> productsVariants);
     List<ProductsVariants> findAllById(UUID productId);
+    void deleteByProductId(UUID productId);
 }

@@ -31,5 +31,11 @@ public class ProductVariantsServiceImpl implements  ProductVariantsService{
         List<ProductsVariantsEntity> entities = productVariantsRepository.findVariantsByProductId(productId);
         return productVariantsMapper.toDomains(entities);
     }
+
+    @Override
+    public void deleteByProductId(UUID productId) {
+        productVariantsRepository.deleteByProductId(productId);
+
+    }
 }
 
